@@ -1,8 +1,14 @@
-/** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],  // Ensure this is correct
+  content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        cream: "#FAF3E0", // Custom cream shade
+      },
+      backdropBlur: {
+        xs: "2px",
+      },
+    },
   },
   plugins: [],
 };
