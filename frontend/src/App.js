@@ -1,8 +1,9 @@
 import React from "react";
-import MapComponent from "./MapComponent";
+import HomePage from "./pages/HomePage";
+import "./index.css"
 
 function App() {
-  return <MapComponent />;
+  return <HomePage />;
 }
 
 export default App;

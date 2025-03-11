@@ -1,31 +1,41 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
-import random
-import time
+from flask import Flask, jsonify, request
+from flask_cors import CORS # type: ignore
+import requests
+from dotenv import load_dotenv # type: ignore
+import os
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-# Simulated bus routes with initial locations
-buses = {
-    "Bus 101": [[28.6139, 77.2090], [28.6200, 77.2150], [28.6250, 77.2200]],  # Route 1
-    "Bus 202": [[28.5355, 77.3910], [28.5400, 77.4000], [28.5500, 77.4100]],  # Route 2
-    "Bus 303": [[28.7041, 77.1025], [28.7100, 77.1100], [28.7150, 77.1200]],  # Route 3
-}
+TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY")
 
-bus_positions = {bus: buses[bus][0] for bus in buses}  # Start from first point
+if not TOMTOM_API_KEY:
+    raise ValueError("Missing TomTom API Key. Ensure it's set in the .env file")
 
-@app.route('/buses', methods=['GET'])
-def get_bus_locations():
-    global bus_positions
+@app.route('/route', methods=['GET'])
+def get_route():
+    start_lat = request.args.get('start_lat')
+    start_lng = request.args.get('start_lng')
+    end_lat = request.args.get('end_lat')
+    end_lng = request.args.get('end_lng')
 
-    # Move each bus along its route randomly
-    for bus, route in buses.items():
-        current_index = route.index(bus_positions[bus])
-        next_index = (current_index + 1) % len(route)  # Loop back after last stop
-        bus_positions[bus] = route[next_index]
+    if not all([start_lat, start_lng, end_lat, end_lng]):
+        return jsonify({"error": "Missing coordinates"}), 400
 
-    return jsonify(bus_positions)
+    # TomTom Routing API URL
+    url = f"https://api.tomtom.com/routing/1/calculateRoute/{start_lat},{start_lng}:{end_lat},{end_lng}/json?key={TOMTOM_API_KEY}&routeType=fastest&travelMode=car"
+
+    response = requests.get(url)
+    data = response.json()
+
+    if "routes" in data and len(data["routes"]) > 0:
+        route_points = [{"lat": p["latitude"], "lng": p["longitude"]} for p in data["routes"][0]["legs"][0]["points"]]
+        return jsonify({"route": route_points})
+
+    return jsonify({"error": "No route found"}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)
